@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background1"
+    tools:context=".activity.RegisterActivity">
+<!--    <com.airbnb.lottie.LottieAnimationView-->
+<!--        android:id="@+id/lav_hi"-->
+<!--        android:layout_alignParentTop="true"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="200dp"-->
+<!--        app:lottie_autoPlay="true"-->
+<!--        app:lottie_loop="true"-->
+<!--        app:lottie_rawRes="@raw/hi"-->
+<!--        />-->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardview"
+        android:layout_centerInParent="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#E8FFFFED"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp"
+        android:layout_marginLeft="@dimen/dp_20"
+        android:layout_marginRight="20dp">
+        <RelativeLayout
+
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <RelativeLayout
+                android:layout_centerHorizontal="true"
+                android:id="@+id/relativeLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <TextView
+                    android:id="@+id/tv_register"
+                    android:layout_width="140dp"
+                    android:layout_height="60dp"
+                    android:gravity="center"
+                    android:layout_marginStart="@dimen/dp_20"
+                    android:layout_marginTop="@dimen/dp_20"
+                    android:layout_marginEnd="@dimen/dp_20"
+                    android:layout_marginBottom="@dimen/dp_20"
+                    android:text="注  册"
+                    android:textColor="@color/black"
+                    android:textSize="50sp"
+                    android:textStyle="bold" />
+
+            </RelativeLayout>
+            <RelativeLayout
+                android:layout_below="@id/relativeLayout"
+                android:layout_centerHorizontal="true"
+                android:id="@+id/username_relativeLayout"
+                android:layout_width="280dp"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/username_imageView"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/register_icon3" />
+
+                <EditText
+                    android:id="@+id/username_editText"
+                    android:layout_width="280dp"
+                    android:layout_height="40dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_toRightOf="@+id/username_imageView"
+                    android:background="@drawable/input_background"
+                    android:gravity="center"
+                    android:hint="请输入用户名"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:inputType="text"
+                    android:maxLines="1"/>
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/email_relativeLayout"
+                android:layout_width="280dp"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/username_relativeLayout"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="@dimen/dp_20"
+                android:layout_marginBottom="@dimen/dp_20">
+
+                <ImageView
+                    android:id="@+id/email_imageView"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/register_icon2" />
+
+                <EditText
+                    android:id="@+id/email_editText"
+                    android:layout_width="280dp"
+                    android:layout_height="40dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_toRightOf="@+id/email_imageView"
+                    android:background="@drawable/input_background"
+                    android:gravity="center"
+                    android:hint="请输入邮箱"
+                    android:maxLines="1"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+            <RelativeLayout
+                android:layout_below="@id/email_relativeLayout"
+                android:layout_centerHorizontal="true"
+                android:id="@+id/password_relativeLayout1"
+                android:layout_width="280dp"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/password_imageView1"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/register_icon1" />
+
+                <EditText
+                    android:id="@+id/password_editText1"
+                    android:layout_width="280dp"
+                    android:layout_height="40dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_toRightOf="@+id/password_imageView1"
+                    android:background="@drawable/input_background"
+                    android:gravity="center"
+                    android:hint="请输入密码"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"
+                    android:inputType="textPassword"/>
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/password_relativeLayout2"
+                android:layout_width="280dp"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/password_relativeLayout1"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp">
+
+                <ImageView
+                    android:id="@+id/password_imageView2"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/register_icon1" />
+
+                <EditText
+                    android:id="@+id/password_editText2"
+                    android:layout_width="280dp"
+                    android:layout_height="40dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_toRightOf="@+id/password_imageView2"
+                    android:background="@drawable/input_background"
+                    android:gravity="center"
+                    android:hint="请再次输入密码"
+                    android:inputType="textPassword"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+            </RelativeLayout>
+            <Button
+                android:layout_margin="@dimen/dp_20"
+                android:layout_below="@+id/password_relativeLayout2"
+                android:id="@+id/register_button"
+                android:layout_centerHorizontal="true"
+                android:layout_width="230dp"
+                android:layout_height="55dp"
+                android:background="@drawable/button1_shape"
+                android:gravity="center"
+                android:text="注     册"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+        </RelativeLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</RelativeLayout>

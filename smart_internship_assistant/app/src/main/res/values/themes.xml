@@ -1,0 +1,10 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.Smart_Internship_Assistant" parent="Theme.MaterialComponents.Light.NoActionBar.Bridge">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:fontFamily">@font/font_style</item>
+        <item name= "android:windowFullscreen">true</item>//全屏即无通知栏
+        <!--        <item name="android:windowTranslucentStatus">true</item>-->
+    </style>
+</resources>

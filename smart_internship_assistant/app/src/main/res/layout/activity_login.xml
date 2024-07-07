@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background1"
+    tools:context=".activity.LoginActivity">
+    <com.airbnb.lottie.LottieAnimationView
+        android:scaleType="fitStart"
+        android:layout_alignParentTop="true"
+        android:id="@+id/lav_smile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:lottie_loop="true"
+        app:lottie_rawRes="@raw/smile"
+        app:lottie_autoPlay="true"/>
+    <androidx.cardview.widget.CardView
+        android:layout_centerInParent="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="300dp"
+        android:backgroundTint="#E8FFFFED"
+        android:layout_marginLeft="@dimen/dp_30"
+        android:layout_marginRight="@dimen/dp_30"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="4dp">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/tv_login"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginBottom="20dp"
+                android:text="登  录"
+                android:textColor="@color/black"
+                android:textSize="50sp"
+                android:textStyle="bold" />
+            <RelativeLayout
+                android:layout_below="@id/tv_login"
+                android:id="@+id/email_relativeLayout"
+                android:layout_margin="@dimen/dp_20"
+                android:layout_centerHorizontal="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:layout_editor_absoluteX="45dp"
+                tools:layout_editor_absoluteY="363dp">
+                <ImageView
+                    android:id="@+id/email_imageView"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/register_icon2" />
+
+                <EditText
+                    android:id="@+id/email_editText"
+                    android:layout_width="260dp"
+                    android:layout_height="50dp"
+                    android:layout_marginLeft="20dp"
+                    android:layout_toRightOf="@+id/email_imageView"
+                    android:background="@drawable/input_background"
+                    android:gravity="center"
+                    android:paddingLeft="10dp"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:maxLines="1"/>
+            </RelativeLayout>
+            <RelativeLayout
+                android:layout_below="@+id/email_relativeLayout"
+                android:layout_margin="@dimen/dp_20"
+                android:layout_centerHorizontal="true"
+                android:id="@+id/password_relativeLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+                <com.airbnb.lottie.LottieAnimationView
+                    android:id="@+id/password_imageView1"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_centerVertical="true"
+                    android:background="@drawable/register_icon1" />
+
+                <EditText
+                    android:id="@+id/password_editText1"
+                    android:layout_width="260dp"
+                    android:layout_height="50dp"
+                    android:layout_marginLeft="21dp"
+                    android:layout_toRightOf="@+id/password_imageView1"
+                    android:background="@drawable/input_background"
+                    android:gravity="center"
+                    android:paddingLeft="10dp"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:inputType="textPassword"
+                    android:maxLines="1"/>
+            </RelativeLayout>
+
+            <Button
+                android:id="@+id/login_button"
+                android:layout_width="230dp"
+                android:layout_height="55dp"
+                android:layout_below="@+id/password_relativeLayout"
+                android:layout_centerHorizontal="true"
+                android:layout_marginStart="@dimen/dp_20"
+                android:layout_marginTop="@dimen/dp_20"
+                android:layout_marginEnd="@dimen/dp_20"
+                android:layout_marginBottom="@dimen/dp_30"
+                android:background="@drawable/button1_shape"
+                android:gravity="center"
+                android:text="登     录"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                tools:layout_editor_absoluteX="90dp"
+                tools:layout_editor_absoluteY="570dp" />
+        </RelativeLayout>
+    </androidx.cardview.widget.CardView>
+
+</RelativeLayout>

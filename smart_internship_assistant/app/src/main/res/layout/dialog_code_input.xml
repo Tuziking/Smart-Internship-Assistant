@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.card.MaterialCardView
+        android:layout_marginLeft="@dimen/dp_5"
+        android:layout_marginRight="@dimen/dp_5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardElevation="1dp"
+        app:cardCornerRadius="16dp"
+        app:strokeColor="#C2A98C"
+        app:strokeWidth="2dp">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:layout_marginStart="@dimen/dp_10"
+                android:layout_marginTop="@dimen/dp_10"
+                android:layout_marginEnd="@dimen/dp_10"
+                android:layout_marginBottom="@dimen/dp_10"
+                android:text="请输入邮箱验证码"
+                android:textColor="@color/black"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+<!--            <RelativeLayout-->
+<!--                android:id="@+id/relativeLayout"-->
+<!--                android:layout_marginTop="5dp"-->
+<!--                android:layout_below="@id/tv_title"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_centerHorizontal="true">-->
+<!--                <TextView-->
+<!--                    android:layout_centerVertical="true"-->
+<!--                    android:id="@+id/tv_title2"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="已发送至邮箱"-->
+<!--                    android:textSize="16sp"/>-->
+<!--                <Button-->
+<!--                    android:layout_toRightOf="@+id/tv_title2"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="30dp"-->
+<!--                    android:gravity="center"-->
+<!--                    android:text="重新发 送"-->
+<!--                    android:textSize="16sp"-->
+<!--                    android:background="@drawable/button3_shape"-->
+<!--                    android:textColor="#FF6B00"/>-->
+<!--            </RelativeLayout>-->
+
+            <com.example.d_emo.view.CodeInputView
+
+                android:id="@+id/codeInputView"
+                android:layout_width="match_parent"
+                android:layout_height="35dp"
+                android:layout_below="@+id/tv_title"
+                android:layout_marginStart="@dimen/dp_30"
+                android:layout_marginTop="@dimen/dp_30"
+                android:layout_marginEnd="@dimen/dp_30"
+                android:layout_marginBottom="@dimen/dp_30"
+                android:maxLength="6"
+                app:setBorderColor="@color/gray_500"
+                app:setBorderCornerRadius="10dp"
+                app:setBorderSpacing="10dp"
+                app:setFakeBoldText="true"
+                app:setInputBorderColor="#FFC300"
+                app:setMaxLength="6" />
+<!--            <RelativeLayout-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content">-->
+<!--                <Button-->
+<!--                    android:id="@+id/btn_confirm"-->
+<!--                    android:layout_width="150dp"-->
+<!--                    android:layout_height="50dp"-->
+<!--                    android:layout_marginTop="10dp"-->
+<!--                    android:layout_marginBottom="10dp"-->
+<!--                    android:layout_marginStart="10dp"-->
+<!--                    android:layout_marginEnd="10dp"-->
+<!--                    android:text="确 认"-->
+<!--                    android:textColor="@color/black"-->
+<!--                    android:textSize="18sp"-->
+<!--                    android:paddingBottom="10dp"-->
+<!--                    android:background="@drawable/background_dialog3" />-->
+<!--            </RelativeLayout>-->
+        </RelativeLayout>
+    </com.google.android.material.card.MaterialCardView>
+</RelativeLayout>
