@@ -146,7 +146,7 @@ public class LoginActivity extends AppCompatActivity {
                                 //再次登录
                                 spHelper.save(mail,password);
 
-                                Intent intent = new Intent(LoginActivity.this, AssistantActivity.class);
+                                Intent intent = new Intent(LoginActivity.this,SpeechActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                                 startActivity(intent);
                                 finish();

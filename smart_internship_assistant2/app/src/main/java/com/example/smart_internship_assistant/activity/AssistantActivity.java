@@ -90,19 +90,7 @@ public class AssistantActivity extends AppCompatActivity {
         }
     }
 
-//    private void getPermissionResults() {
-//        List<String> permissionNameList = new ArrayList<>();
-//        permissionNameList.add("android.permission.POST_NOTIFICATIONS");
-//        permissionNameList.add("android.permission.USE_FULL_SCREEN_INTENT");
-//        permissionNameList.add(Manifest.permission.CAMERA);
-//        permissionNameList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//        permissionNameList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-//        permissionNameList.add(Manifest.permission.RECORD_AUDIO);
-//        permissionNameList.add(Manifest.permission.READ_MEDIA_AUDIO);
-//        permissionNameList.add(Manifest.permission.READ_MEDIA_IMAGES);
-//        permissionNameList.add(Manifest.permission.READ_MEDIA_VIDEO);
-//        requestPermission(permissionNameList);
-//    }
+
 
     private void initView() {
         TextView tv_title = findViewById(R.id.tv_title);
@@ -162,9 +150,9 @@ public class AssistantActivity extends AppCompatActivity {
         // 创建音视频的媒体流
         mMediaStream = mConnFactory.createLocalMediaStream("local_stream");
         // 以下创建并添加音频轨道
-        AudioSource audioSource = mConnFactory.createAudioSource(mAudioConstraints);
-        AudioTrack audioTrack = mConnFactory.createAudioTrack("audio_track", audioSource);
-        mMediaStream.addTrack(audioTrack);
+//        AudioSource audioSource = mConnFactory.createAudioSource(mAudioConstraints);
+//        AudioTrack audioTrack = mConnFactory.createAudioTrack("audio_track", audioSource);
+//        mMediaStream.addTrack(audioTrack);
         // 以下创建并初始化视频捕捉器
         mVideoCapturer = createVideoCapture();
         VideoSource videoSource = mConnFactory.createVideoSource(mVideoCapturer.isScreencast());
@@ -249,14 +237,14 @@ public class AssistantActivity extends AppCompatActivity {
         final String[] deviceNames = enumerator.getDeviceNames();
         // 先使用前置摄像头
         for (String deviceName : deviceNames) {
-            if (enumerator.isFrontFacing(deviceName)) {
+            if (enumerator.isBackFacing(deviceName)) {
                 VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
                 if (videoCapturer != null) {
                     return videoCapturer;
                 }
             }
         }
-        // 没有前置摄像头再找后置摄像头
+        // 没有后置摄像头再找 前置摄像头
         for (String deviceName : deviceNames) {
             if (!enumerator.isFrontFacing(deviceName)) {
                 VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);

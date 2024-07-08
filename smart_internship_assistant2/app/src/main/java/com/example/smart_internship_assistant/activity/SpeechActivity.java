@@ -20,11 +20,17 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.smart_internship_assistant.MainApplication;
 import com.example.smart_internship_assistant.R;
 import com.example.smart_internship_assistant.User;
+import com.example.smart_internship_assistant.bean.ContactInfo;
 import com.example.smart_internship_assistant.config.DemoConfig;
+import com.example.smart_internship_assistant.constant.ChatConst;
+import com.example.smart_internship_assistant.util.SocketUtil;
 import com.example.smart_internship_assistant.utils.DemoAudioRecordDataSource;
 import com.example.smart_internship_assistant.utils.MediaPlayerDemo;
+import com.example.smart_internship_assistant.webrtc.Peer;
+import com.example.smart_internship_assistant.webrtc.ProxyVideoSink;
 import com.tencent.aai.AAIClient;
 import com.tencent.aai.audio.utils.WavCache;
 import com.tencent.aai.auth.LocalCredentialProvider;
@@ -47,7 +53,30 @@ import com.tencent.cloud.libqcloudtts.TtsMode;
 import com.tencent.cloud.libqcloudtts.TtsResultListener;
 import com.tencent.cloud.libqcloudtts.engine.offlineModule.auth.QCloudOfflineAuthInfo;
 
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.Camera1Enumerator;
+import org.webrtc.Camera2Enumerator;
+import org.webrtc.CameraEnumerator;
+import org.webrtc.DefaultVideoDecoderFactory;
+import org.webrtc.DefaultVideoEncoderFactory;
+import org.webrtc.EglBase;
+import org.webrtc.IceCandidate;
+import org.webrtc.MediaConstraints;
+import org.webrtc.MediaStream;
+import org.webrtc.PeerConnection;
+import org.webrtc.PeerConnectionFactory;
+import org.webrtc.RendererCommon;
+import org.webrtc.SessionDescription;
+import org.webrtc.SurfaceTextureHelper;
+import org.webrtc.SurfaceViewRenderer;
+import org.webrtc.VideoCapturer;
+import org.webrtc.VideoDecoderFactory;
+import org.webrtc.VideoEncoderFactory;
+import org.webrtc.VideoSource;
+import org.webrtc.VideoTrack;
+import org.webrtc.audio.AudioDeviceModule;
+import org.webrtc.audio.JavaAudioDeviceModule;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -61,6 +90,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+import io.socket.client.Socket;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -126,16 +156,194 @@ public class SpeechActivity extends AppCompatActivity {
 
     MediaPlayer mp = null;
 
+    //推流部分
+    private Socket mSocket; // 声明一个套接字对象
+    private SurfaceViewRenderer svr_local; // 本地的表面视图渲染器（我方）
+    private PeerConnectionFactory mConnFactory; // 点对点连接工厂
+    private EglBase mEglBase; // OpenGL ES 与本地设备之间的接口对象
+    private MediaStream mMediaStream; // 媒体流
+    private VideoCapturer mVideoCapturer; // 视频捕捉器
+    private MediaConstraints mOfferConstraints; // 提供方的媒体条件
+    private MediaConstraints mAudioConstraints; // 音频的媒体条件
+    private List<PeerConnection.IceServer> mIceServers = ChatConst.getIceServerList(); // ICE服务器列表
+    private Peer mPeer; // 点对点对象
+    private ContactInfo mContact = new ContactInfo("提供方", "接收方");
+
     private void checkPermissions() {
 
         List<String> permissions = new LinkedList<>();
         addPermission(permissions, Manifest.permission.RECORD_AUDIO);
         addPermission(permissions, Manifest.permission.INTERNET);
+        addPermission(permissions, Manifest.permission.CAMERA);
 
         if (!permissions.isEmpty()) {
             ActivityCompat.requestPermissions(this, permissions.toArray(new String[permissions.size()]),
                     MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
         }
+
+        initRender(); // 初始化渲染图层
+        initStream(); // 初始化音视频的媒体流
+        initSocket(); // 初始化信令交互的套接字
+        initView(); // 初始化视图界面
+    }
+    private void initView() {
+//        TextView tv_title = findViewById(R.id.tv_title);
+//        tv_title.setText("这里是视频提供方");
+//        findViewById(R.id.iv_back).setOnClickListener(v -> dialOff()); // 挂断通话
+    }
+    private void initRender() {
+        svr_local = findViewById(R.id.svr_local);
+        mEglBase = EglBase.create(); // 创建EglBase实例
+        // 以下初始化我方的渲染图层
+        svr_local.init(mEglBase.getEglBaseContext(), null);
+        svr_local.setMirror(true); // 是否设置镜像
+        svr_local.setZOrderMediaOverlay(true); // 是否置于顶层
+        // 设置缩放类型，SCALE_ASPECT_FILL表示充满视图
+        svr_local.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+        svr_local.setEnableHardwareScaler(false); // 是否开启硬件缩放
+    }
+    private void initConstraints() {
+        // 创建发起方的媒体条件
+        mOfferConstraints = new MediaConstraints();
+        // 是否接受音频流
+        mOfferConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "true"));
+        // 是否接受视频流
+        mOfferConstraints.mandatory.add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
+        // 创建音频流的媒体条件
+        mAudioConstraints = new MediaConstraints();
+        // 是否消除回声
+        mAudioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googEchoCancellation", "true"));
+        // 是否自动增益
+        mAudioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googAutoGainControl", "true"));
+        // 是否过滤高音
+        mAudioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googHighpassFilter", "true"));
+        // 是否抑制噪音
+        mAudioConstraints.mandatory.add(new MediaConstraints.KeyValuePair("googNoiseSuppression", "true"));
+    }
+    private void initStream() {
+        Log.d(TAG, "initStream");
+        // 初始化点对点连接工厂
+        PeerConnectionFactory.initialize(
+                PeerConnectionFactory.InitializationOptions.builder(getApplicationContext())
+                        .createInitializationOptions());
+        // 创建视频的编解码方式
+        VideoEncoderFactory encoderFactory;
+        VideoDecoderFactory decoderFactory;
+        encoderFactory = new DefaultVideoEncoderFactory(
+                mEglBase.getEglBaseContext(), true, true);
+        decoderFactory = new DefaultVideoDecoderFactory(mEglBase.getEglBaseContext());
+        AudioDeviceModule audioModule = JavaAudioDeviceModule.builder(this).createAudioDeviceModule();
+        // 创建点对点连接工厂
+        PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
+        mConnFactory = PeerConnectionFactory.builder()
+                .setOptions(options)
+                .setAudioDeviceModule(audioModule)
+                .setVideoEncoderFactory(encoderFactory)
+                .setVideoDecoderFactory(decoderFactory)
+                .createPeerConnectionFactory();
+        initConstraints(); // 初始化视频通话的各项条件
+        // 创建音视频的媒体流
+        mMediaStream = mConnFactory.createLocalMediaStream("local_stream");
+        // 以下创建并添加音频轨道
+//        AudioSource audioSource = mConnFactory.createAudioSource(mAudioConstraints);
+//        AudioTrack audioTrack = mConnFactory.createAudioTrack("audio_track", audioSource);
+//        mMediaStream.addTrack(audioTrack);
+        // 以下创建并初始化视频捕捉器
+        mVideoCapturer = createVideoCapture();
+        VideoSource videoSource = mConnFactory.createVideoSource(mVideoCapturer.isScreencast());
+        SurfaceTextureHelper surfaceHelper = SurfaceTextureHelper.create("CaptureThread", mEglBase.getEglBaseContext());
+        mVideoCapturer.initialize(surfaceHelper, this, videoSource.getCapturerObserver());
+        // 设置视频画质。三个参数分别表示：视频宽度、视频高度、每秒传输帧数fps
+        mVideoCapturer.startCapture(500, 500, 30);
+        // 以下创建并添加视频轨道
+        VideoTrack videoTrack = mConnFactory.createVideoTrack("video_track", videoSource);
+        mMediaStream.addTrack(videoTrack);
+        ProxyVideoSink localSink = new ProxyVideoSink();
+        localSink.setTarget(svr_local); // 指定视频轨道中我方的渲染图层
+        mMediaStream.videoTracks.get(0).addSink(localSink);
+    }
+
+    // 创建视频捕捉器
+    private VideoCapturer createVideoCapture() {
+        VideoCapturer videoCapturer;
+        if (Camera2Enumerator.isSupported(this)) { // 优先使用二代相机
+            videoCapturer = createCameraCapture(new Camera2Enumerator(this));
+        } else { // 如果不支持二代相机，就使用传统相机
+            videoCapturer = createCameraCapture(new Camera1Enumerator(true));
+        }
+        return videoCapturer;
+    }
+
+    private VideoCapturer createCameraCapture(CameraEnumerator enumerator) {
+        final String[] deviceNames = enumerator.getDeviceNames();
+        // 先使用前置摄像头
+        for (String deviceName : deviceNames) {
+            if (enumerator.isBackFacing(deviceName)) {
+                VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
+                if (videoCapturer != null) {
+                    return videoCapturer;
+                }
+            }
+        }
+        // 没有后置摄像头再找 前置摄像头
+        for (String deviceName : deviceNames) {
+            if (!enumerator.isFrontFacing(deviceName)) {
+                VideoCapturer videoCapturer = enumerator.createCapturer(deviceName, null);
+                if (videoCapturer != null) {
+                    return videoCapturer;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void initSocket() {
+        mSocket = MainApplication.getInstance().getSocket();
+        mSocket.connect(); // 建立Socket连接
+        // 等待接入ICE候选者，目的是打通流媒体传输网络
+        mSocket.on("IceInfo", args -> {
+            Log.d(TAG, "IceInfo");
+            try {
+                JSONObject json = (JSONObject) args[0];
+                IceCandidate candidate = new IceCandidate(json.getString("id"),
+                        json.getInt("label"), json.getString("candidate")
+                );
+                mPeer.getConnection().addIceCandidate(candidate); // 添加ICE候选者
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
+        // 等待对方的会话连接，以便建立双方的通信链路
+        mSocket.on("SdpInfo", args -> {
+            Log.d(TAG, "SdpInfo");
+            try {
+                JSONObject json = (JSONObject) args[0];
+                SessionDescription sd = new SessionDescription
+                        (SessionDescription.Type.fromCanonicalForm(
+                                json.getString("type")), json.getString("description"));
+                mPeer.getConnection().setRemoteDescription(mPeer, sd); // 设置对方的会话描述
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
+        mSocket.on("other_hang_up", (args) -> dialOff()); // 等待对方挂断通话
+        Log.d(TAG, "self_dial_in");
+        SocketUtil.emit(mSocket, "self_dial_in", mContact); // 我方发起了视频通话
+        // 等待对方接受视频通话
+        mSocket.on("other_dial_in", (args) -> {
+            String other_name = (String) args[0];
+            Log.d(TAG, mContact.from+" to "+mContact.to+", other_name="+other_name);
+            // 第四个参数表示对方接受视频通话之后，如何显示对方的视频画面
+            mPeer = new Peer(mSocket, mContact.from, mContact.to, (userId, remoteStream) -> Log.d(TAG, "new Peer"));
+            mPeer.init(mConnFactory, mMediaStream, mIceServers); // 初始化点对点连接
+            mPeer.getConnection().createOffer(mPeer, mOfferConstraints); // 创建供应
+        });
+    }
+    // 挂断通话
+    private void dialOff() {
+        mSocket.off("other_hang_up"); // 取消监听对方的挂断请求
+        SocketUtil.emit(mSocket, "self_hang_up", mContact); // 发出挂断通话消息
+        finish(); // 关闭当前页面
     }
 
     private void addPermission(List<String> permissionList, String permission) {
@@ -168,12 +376,12 @@ public class SpeechActivity extends AppCompatActivity {
         volume = findViewById(R.id.volume);
         voiceDb = findViewById(R.id.voice_db);
         mSilentSwitch = findViewById(R.id.silent_switch);
-        mScrollView = findViewById(R.id.scroll_view);
+//        mScrollView = findViewById(R.id.scroll_view);
         mIsCompressSW = findViewById(R.id.switch1);
 //        mEnableAEC = findViewById(R.id.aec_enable);
 //        mEnablePlayer = findViewById(R.id.play_sound);
 //        mFileName = findViewById(R.id.file_name);
-        recognizeResult = findViewById(R.id.recognize_result);
+//        recognizeResult = findViewById(R.id.recognize_result);
         handler = new Handler(getMainLooper());
         initWebSocket();
         initTTS();
@@ -231,7 +439,7 @@ public class SpeechActivity extends AppCompatActivity {
                 final String msg = buildMessage(resMap);
                 AAILogger.info(TAG, "分片slice msg="+msg);
                 Log.d(TAG, "onSliceSuccess: "+msg);
-                ShowMsg(msg);
+
             }
 
             /**
@@ -251,7 +459,7 @@ public class SpeechActivity extends AppCompatActivity {
                 final String msg = buildMessage(resMap);
                 AAILogger.info(TAG, "语音流segment msg="+msg);
                 Log.d(TAG, "onSegmentSuccess: "+msg);
-                ShowMsg(msg);
+
 
             }
 
@@ -299,11 +507,11 @@ public class SpeechActivity extends AppCompatActivity {
                         start.setEnabled(true);
                         if (clientException!=null) {
                             recognizeState.setText("识别状态：失败,  "+clientException);
-                            ShowMsg("识别状态：失败,  "+clientException);
+
                             AAILogger.info(TAG, "识别状态：失败,  "+clientException);
                         } else if (serverException!=null) {
                             recognizeState.setText("识别状态：失败,  "+serverException);
-                            ShowMsg("识别状态：失败,  "+serverException);
+
                         }
                     }
                 });
@@ -328,7 +536,7 @@ public class SpeechActivity extends AppCompatActivity {
              */
             @Override
             public void onStartRecord(AudioRecognizeRequest request) {
-                ShowMsg("");
+
                 isRecording = true;
                 minVoiceDb = Float.MAX_VALUE;
                 maxVoiceDb = Float.MIN_VALUE;
@@ -629,13 +837,13 @@ public class SpeechActivity extends AppCompatActivity {
             @Override
             public void onSynthesizeData(byte[] bytes, String utteranceId, String text, int engineType, String requestId, String respJson) {
                 Log.d(TAG, "onSynthesizeData: " + bytes.length + ":" + utteranceId + ":" + text + ":" + engineType);
-                ShowMsg("success:"+"data length=" + bytes.length + "   text = "+ text + "    requestId = " + requestId);
+
                 if (respJson != null) {
                     try {
                         JSONObject object = new JSONObject(respJson);
                         Log.d(TAG, "Subtitles: " + object.getJSONObject("Response").getJSONObject("Subtitles").toString());
                     }catch (Exception e){
-                        ShowMsg(e.getMessage());
+
                     }
                 }
 
@@ -646,7 +854,7 @@ public class SpeechActivity extends AppCompatActivity {
                     QPlayerError err = mediaPlayer.enqueue(bytes, text, utteranceId, respJson);
                     if (err != null){
                         Log.d(TAG, "mediaPlayer enqueue error" + err.getmMessage());
-                        ShowMsg("mediaPlayer enqueue error" + err.getmMessage());
+
                     }
                 } else {
                     //将byteBuffer保存到文件
@@ -664,10 +872,10 @@ public class SpeechActivity extends AppCompatActivity {
                         os.close();
                         //QPlayerError err = mediaPlayer.enqueue(file, text, utteranceId);     //播放器也支持文件入参
                         Log.d(TAG, "file: "+file.toString());
-                        ShowMsg("合成成功,保存音频文件路径为：" + file.toString());
+
 
                     } catch (IOException e) {
-                        ShowMsg("合成成功,保存音频文件失败：" + e.toString());
+
                         return;
                     }
                 }
@@ -695,43 +903,43 @@ public class SpeechActivity extends AppCompatActivity {
             @Override
             public void onTTSPlayStart() {
                 Log.d(TAG, "开始播放");
-                ShowMsg("开始播放");
+
             }
 
             @Override
             public void onTTSPlayWait() {
                 Log.d(TAG, "播放完成，等待音频数据");
-                ShowMsg("播放完成，等待音频数据");
+
             }
 
             @Override
             public void onTTSPlayResume() {
                 Log.d(TAG, "恢复播放");
-                ShowMsg("恢复播放");
+
             }
 
             @Override
             public void onTTSPlayPause() {
                 Log.d(TAG, "暂停播放");
-                ShowMsg("暂停播放");
+
             }
 
             @Override
             public void onTTSPlayNext(String text, String utteranceId) {
                 Log.d(TAG, "开始播放: " + utteranceId + "|" + text);
-                ShowMsg("即将播放:"+utteranceId + ":" + text);
+
             }
 
             @Override
             public void onTTSPlayStop() {
                 Log.d(TAG, "播放停止，内部队列已清空");
-                ShowMsg("播放停止或手动取消");
+
             }
 
             @Override
             public void onTTSPlayError(QPlayerError error) {
                 Log.d(TAG, "播放器发生异常:"+error.getmCode() + ":" + error.getmMessage());
-                ShowMsg("播放器发生异常:"+error.getmCode() + ":" + error.getmMessage());
+
             }
 
             /**
@@ -741,7 +949,7 @@ public class SpeechActivity extends AppCompatActivity {
             @Override
             public void onTTSPlayProgress(String currentWord, int currentIndex) {
                 Log.d(TAG, "onTTSPlayProgress: " + currentWord + "|" + currentIndex);
-                ShowMsg("onTTSPlayProgress:" + "|" + currentWord + "|" + currentIndex );
+
             }
         });
 
@@ -804,15 +1012,5 @@ public class SpeechActivity extends AppCompatActivity {
 
     }
 
-    private void ShowMsg(String message) {
-        Log.i(TAG, message);
-        new Thread() {
-            public void run() {
-                runOnUiThread(() -> {
-                    recognizeResult.setText(message);
-                    mScrollView.fullScroll(ScrollView.FOCUS_DOWN);
-                });
-            }
-        }.start();
-    }
+
 }
