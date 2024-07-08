@@ -1,5 +1,7 @@
 package com.example.smart_internship_assistant.activity;
 
+import static com.tencent.cloud.libqcloudtts.engine.offlineModule.auth.AuthErrorCode.OFFLINE_AUTH_SUCCESS;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -21,6 +23,7 @@ import android.widget.Toast;
 import com.example.smart_internship_assistant.R;
 import com.example.smart_internship_assistant.config.DemoConfig;
 import com.example.smart_internship_assistant.utils.DemoAudioRecordDataSource;
+import com.example.smart_internship_assistant.utils.MediaPlayerDemo;
 import com.tencent.aai.AAIClient;
 import com.tencent.aai.audio.utils.WavCache;
 import com.tencent.aai.auth.LocalCredentialProvider;
@@ -34,9 +37,22 @@ import com.tencent.aai.log.LoggerListener;
 import com.tencent.aai.model.AudioRecognizeConfiguration;
 import com.tencent.aai.model.AudioRecognizeRequest;
 import com.tencent.aai.model.AudioRecognizeResult;
+import com.tencent.cloud.libqcloudtts.MediaPlayer.QCloudMediaPlayer;
+import com.tencent.cloud.libqcloudtts.MediaPlayer.QCloudPlayerCallback;
+import com.tencent.cloud.libqcloudtts.MediaPlayer.QPlayerError;
+import com.tencent.cloud.libqcloudtts.TtsController;
+import com.tencent.cloud.libqcloudtts.TtsError;
+import com.tencent.cloud.libqcloudtts.TtsMode;
+import com.tencent.cloud.libqcloudtts.TtsResultListener;
+import com.tencent.cloud.libqcloudtts.engine.offlineModule.auth.QCloudOfflineAuthInfo;
+
+import org.json.JSONObject;
 
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -54,10 +70,24 @@ import okio.ByteString;
 public class SpeechActivity extends AppCompatActivity {
     private Handler reconnectHandler = new Handler(Looper.getMainLooper());
     private Runnable reconnectRunnable = this::initWebSocket;
+    //TTS
+    private volatile TtsController mTtsController;
+    private MediaPlayerDemo mediaPlayer;
+    TtsMode mTtsmode = TtsMode.ONLINE;
     private static final int RECONNECT_INTERVAL = 5000;  // 重连间隔时间（毫秒）
 
     private static final String host = "192.168.43.25:8765";
     private WebSocket webSocket;
+    //在线参数
+    float mVoiceSpeed = 0f;
+    float mVoiceVolume = 0f;
+    int mVoiceType = 1001;
+    int mPrimaryLanguage = 1; //主语言类型：1-中文（默认）2-英文
+    //时间配置
+    int mConnectTimeout = 15 *1000; //连接超时默认15000ms(15s) 范围[500,30000] 单位ms ， Mix模式下建议调小此值，以获得更好的体验
+    int mReadTimeout = 30 *1000; //读取超时超时默认30000ms(30s) 范围[2200,60000] 单位ms， Mix模式下建议调小此值，以获得更好的体验
+    int mCheckNetworkIntervalTime = 5 * 60;
+    boolean isPlay = true;
     Button start;
     Button cancel;
 
@@ -145,7 +175,8 @@ public class SpeechActivity extends AppCompatActivity {
         recognizeResult = findViewById(R.id.recognize_result);
         handler = new Handler(getMainLooper());
         initWebSocket();
-
+        initTTS();
+//        mTtsController.synthesize("傻逼钱波傻逼钱波傻逼钱波傻逼钱波傻逼钱波傻逼钱波傻逼钱波");
 //日志配置 默认打开，您可以关闭
 //        AAILogger.disableDebug();
 //        AAILogger.disableError();
@@ -551,6 +582,166 @@ public class SpeechActivity extends AppCompatActivity {
 
         mSilentSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             isOpenSilentCheck = isChecked;
+        });
+
+    }
+
+    private void initTTS() {
+        //获得TTS合成器实例
+        mTtsController = TtsController.getInstance();
+        /***********************在线参数设置，如果仅用离线合成 不需要设置***************/
+        mTtsController.setSecretId(DemoConfig.secretId);
+        mTtsController.setSecretKey(DemoConfig.secretKey);
+        mTtsController.setOnlineProjectId(0);
+
+        mTtsController.setOnlineVoiceSpeed(mVoiceSpeed);//设置在线所合成音频的语速,语速，范围：[-2，2]，分别对应不同语速：-2代表0.6倍,-1代表0.8倍,0代表1.0倍（默认）,1代表1.2倍,2代表1.5倍,如果需要更细化的语速，可以保留小数点后一位，例如0.5 1.1 1.8等。
+        mTtsController.setOnlineVoiceVolume(mVoiceVolume); //设置在线所合成音频的音量
+        mTtsController.setOnlineVoiceType(mVoiceType);//设置在线所合成音频的音色id,完整的音色id列表见https://cloud.tencent.com/document/product/1073/37995
+        mTtsController.setOnlineVoiceLanguage(mPrimaryLanguage);//主语言类型：1-中文（默认）2-英文
+
+        mTtsController.setConnectTimeout(mConnectTimeout);
+        mTtsController.setReadTimeout(mReadTimeout);
+        mTtsController.setCheckNetworkIntervalTime(mCheckNetworkIntervalTime);
+        // true: 服务器会返回Subtitles，false: 服务器不返回Subtitles，Subtitles为了精准计算播放器里的playProgress
+        mTtsController.setOnlineParam("EnableSubtitle", false);
+
+        mTtsController.init(this,mTtsmode , new TtsResultListener() {
+            /**
+             * 该方法已过期，建议使用其他签名方式的onSynthesizeData
+             *
+             * @param bytes       语音流
+             * @param utteranceId 语句id
+             * @param text        文本
+             * @param engineType  引擎类型 0:在线 1:离线
+             */
+            @Override
+            public void onSynthesizeData(byte[] bytes, String utteranceId, String text, int engineType) {
+                Log.d(TAG, "onSynthesizeData: " + bytes.length + ":" + utteranceId + ":" + text + ":" + engineType);
+            }
+
+            /**
+             * @param bytes 语音数据
+             * @param utteranceId 语句id
+             * @param text 文本
+             * @param engineType 引擎类型 0:在线 1:离线
+             */
+            @Override
+            public void onSynthesizeData(byte[] bytes, String utteranceId, String text, int engineType, String requestId, String respJson) {
+                Log.d(TAG, "onSynthesizeData: " + bytes.length + ":" + utteranceId + ":" + text + ":" + engineType);
+                ShowMsg("success:"+"data length=" + bytes.length + "   text = "+ text + "    requestId = " + requestId);
+                if (respJson != null) {
+                    try {
+                        JSONObject object = new JSONObject(respJson);
+                        Log.d(TAG, "Subtitles: " + object.getJSONObject("Response").getJSONObject("Subtitles").toString());
+                    }catch (Exception e){
+                        ShowMsg(e.getMessage());
+                    }
+                }
+
+                if (isPlay) {
+                    if (mediaPlayer == null)return;
+                    //将合成语音数据送入SDK内置播放器，如果sdk的内置播放器无法满足您的需求，您也可以使用自己实现的播放器替换
+                    // 如果需要使用Server端的Subtitles做播放进度的计算，需要将respJson一同enqueue，前提是设置mTtsController.setOnlineParam("EnableSubtitle", true);
+                    QPlayerError err = mediaPlayer.enqueue(bytes, text, utteranceId, respJson);
+                    if (err != null){
+                        Log.d(TAG, "mediaPlayer enqueue error" + err.getmMessage());
+                        ShowMsg("mediaPlayer enqueue error" + err.getmMessage());
+                    }
+                } else {
+                    //将byteBuffer保存到文件
+                    try {
+                        File file = null;
+                        if (engineType == 1){
+                            file = File.createTempFile("temp", ".wav");
+                        } else {
+                            file = File.createTempFile("temp", ".mp3");
+                        }
+
+                        OutputStream os = new FileOutputStream(file);
+                        os.write(bytes);
+                        os.flush();
+                        os.close();
+                        //QPlayerError err = mediaPlayer.enqueue(file, text, utteranceId);     //播放器也支持文件入参
+                        Log.d(TAG, "file: "+file.toString());
+                        ShowMsg("合成成功,保存音频文件路径为：" + file.toString());
+
+                    } catch (IOException e) {
+                        ShowMsg("合成成功,保存音频文件失败：" + e.toString());
+                        return;
+                    }
+                }
+            }
+
+            /**
+             * @param error 错误信息
+             * @param text 文本(如果有则返回)
+             * @param utteranceId 语句id(如果有则返回)
+             */
+            @Override
+            public void onError(TtsError error, String utteranceId, String text) {
+                Log.d(TAG, "onError: " + error.getCode() + ":" + error.getMessage() + ":" + utteranceId);
+                return;
+            }
+
+            @Override
+            public void onOfflineAuthInfo(QCloudOfflineAuthInfo offlineAuthInfo) {
+                return;
+            }
+
+        });
+        mediaPlayer = new MediaPlayerDemo(new QCloudPlayerCallback(){ //使用SDK中提供的播放器
+
+            @Override
+            public void onTTSPlayStart() {
+                Log.d(TAG, "开始播放");
+                ShowMsg("开始播放");
+            }
+
+            @Override
+            public void onTTSPlayWait() {
+                Log.d(TAG, "播放完成，等待音频数据");
+                ShowMsg("播放完成，等待音频数据");
+            }
+
+            @Override
+            public void onTTSPlayResume() {
+                Log.d(TAG, "恢复播放");
+                ShowMsg("恢复播放");
+            }
+
+            @Override
+            public void onTTSPlayPause() {
+                Log.d(TAG, "暂停播放");
+                ShowMsg("暂停播放");
+            }
+
+            @Override
+            public void onTTSPlayNext(String text, String utteranceId) {
+                Log.d(TAG, "开始播放: " + utteranceId + "|" + text);
+                ShowMsg("即将播放:"+utteranceId + ":" + text);
+            }
+
+            @Override
+            public void onTTSPlayStop() {
+                Log.d(TAG, "播放停止，内部队列已清空");
+                ShowMsg("播放停止或手动取消");
+            }
+
+            @Override
+            public void onTTSPlayError(QPlayerError error) {
+                Log.d(TAG, "播放器发生异常:"+error.getmCode() + ":" + error.getmMessage());
+                ShowMsg("播放器发生异常:"+error.getmCode() + ":" + error.getmMessage());
+            }
+
+            /**
+             * @param currentWord 当前播放的字符
+             * @param currentIndex 当前播放的字符在所在的句子中的下标.
+             */
+            @Override
+            public void onTTSPlayProgress(String currentWord, int currentIndex) {
+                Log.d(TAG, "onTTSPlayProgress: " + currentWord + "|" + currentIndex);
+                ShowMsg("onTTSPlayProgress:" + "|" + currentWord + "|" + currentIndex );
+            }
         });
 
     }
