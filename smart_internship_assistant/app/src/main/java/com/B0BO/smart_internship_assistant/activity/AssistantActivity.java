@@ -1,26 +1,19 @@
 package com.B0BO.smart_internship_assistant.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.Manifest;
 import android.os.Bundle;
-
 import com.B0BO.smart_internship_assistant.R;
-import com.baidu.mapapi.map.MapView;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class AssistantActivity extends BaseActivity {
-    private MapView mapView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_assistant);
         getPermissionResults();
-        mapView = findViewById(R.id.mapView);
-        mapView.onCreate(this, savedInstanceState);
     }
 
     private void getPermissionResults() {
@@ -38,7 +31,18 @@ public class AssistantActivity extends BaseActivity {
         requestPermission(permissionNameList);
     }
 
-    private void initView() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 }

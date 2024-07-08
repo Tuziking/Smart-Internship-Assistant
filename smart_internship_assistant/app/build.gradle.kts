@@ -34,13 +34,20 @@ android {
 dependencies {
 
     implementation("com.airbnb.android:lottie:6.4.0")
-//    implementation("com.github.Wynsbin:VerificationCodeInputView:1.0.2")
-//    implementation("com.makeramen:roundedimageview:2.3.0")
-//    implementation ("com.github.bumptech.glide:glide:4.13.0")
     implementation ("com.google.code.gson:gson:2.10.1")
     implementation ("com.squareup.okhttp3:okhttp:4.10.0")
+    //导入高德地图的SDK 切记不要盲目粘贴，可能出现一些问题，最好是用自己下载的aar包
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
-//    implementation(file("libs/BaiduLBS_Android.aar"))
+
+//    implementation("com.amap.api:navi-3dmap:latest.integration")
+//    implementation("com.amap.api:search:latest.integration")
+//    implementation ("com.amap.api:search:latest.integration")
+//    implementation ("com.amap.api:location:latest.integration")
+
+
+//    implementation("com.tencent.map:tencent-map-nav-sdk-core:6.7.10")
+//    implementation("com.tencent.openmap:foundation:6.7.10")
+//    implementation("com.tencent.map:tencent-map-nav-sdk-tts:6.7.10")
 
 
     implementation("androidx.appcompat:appcompat:1.7.0")
