@@ -40,6 +40,11 @@ dependencies {
     // 导入高德地图的SDK，注意使用自己下载的aar包
     implementation fileTree(dir: 'libs', include: ['*.aar'])
 
+    // webrtc库各版本见 https://mvnrepository.com/artifact/org.webrtc/google-webrtc?repo=bt-google-webrtc
+    implementation 'org.webrtc:google-webrtc:1.0.32006'
+    // socketio库各版本见 https://mvnrepository.com/artifact/io.socket/socket.io-client
+    implementation 'io.socket:socket.io-client:2.0.1'
+
     // 如果需要，可以取消注释以下行以导入其他SDK
     // implementation 'com.amap.api:navi-3dmap:latest.integration'
     // implementation 'com.amap.api:search:latest.integration'

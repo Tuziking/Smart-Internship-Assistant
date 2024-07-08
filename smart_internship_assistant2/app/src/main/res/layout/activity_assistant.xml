@@ -5,11 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".activity.AssistantActivity">
-    <com.amap.api.maps.MapView
-        android:id="@+id/gaode_map"
+
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/svr_local"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="16dp"
-        tools:layout_editor_absoluteY="39dp">
-    </com.amap.api.maps.MapView>
+        android:layout_height="match_parent" />
+
+    <include layout="@layout/title_chat" />
 </RelativeLayout>

@@ -5,12 +5,16 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.smart_internship_assistant.activity.LoginActivity;
 import com.example.smart_internship_assistant.activity.RegisterActivity;
 import com.airbnb.lottie.LottieAnimationView;
+import com.example.smart_internship_assistant.constant.ChatConst;
+import com.example.smart_internship_assistant.util.PermissionUtil;
+import com.example.smart_internship_assistant.util.SocketUtil;
 //import com.example.d_emo.emotion.Emotions;
 
 
@@ -23,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        SocketUtil.checkSocketAvailable(this, ChatConst.CHAT_IP, ChatConst.CHAT_PORT);
         initViews();
     }
 
