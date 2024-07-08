@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.smart_internship_assistant.R;
+import com.example.smart_internship_assistant.User;
 import com.example.smart_internship_assistant.config.DemoConfig;
 import com.example.smart_internship_assistant.utils.DemoAudioRecordDataSource;
 import com.example.smart_internship_assistant.utils.MediaPlayerDemo;
@@ -76,7 +77,7 @@ public class SpeechActivity extends AppCompatActivity {
     TtsMode mTtsmode = TtsMode.ONLINE;
     private static final int RECONNECT_INTERVAL = 5000;  // 重连间隔时间（毫秒）
 
-    private static final String host = "192.168.43.25:8765";
+    private static final String host = "8.140.250.103:8081";
     private WebSocket webSocket;
     //在线参数
     float mVoiceSpeed = 0f;
@@ -748,8 +749,8 @@ public class SpeechActivity extends AppCompatActivity {
 
     private void initWebSocket() {
         OkHttpClient client = new OkHttpClient();
-        String temp = "ws://" + host;
-        Request request = new Request.Builder().url(temp).build();
+        String temp = "ws://" + host+"/chat/chatServer/5";
+        Request request = new Request.Builder().url(temp).addHeader("Authorization", User.getInstance().getToken()).build();
         webSocket = client.newWebSocket(request, new WebSocketListener() {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
@@ -760,14 +761,15 @@ public class SpeechActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onMessage(WebSocket webSocket, ByteString bytes) {
-                super.onMessage(webSocket, bytes);
+            public void onMessage(WebSocket webSocket,String message) {
+                super.onMessage(webSocket, message);
+                mTtsController.synthesize(message);
             }
 
             @Override
             public void onClosing(WebSocket webSocket, int code, String reason) {
                 super.onClosing(webSocket, code, reason);
-                runOnUiThread(() -> Toast.makeText(SpeechActivity.this, "WebSocket Closing", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(SpeechActivity.this, "WebSocket Closing"+reason, Toast.LENGTH_SHORT).show());
                 reconnectWebSocket();
             }
 
